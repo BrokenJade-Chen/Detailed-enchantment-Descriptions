@@ -1,0 +1,31 @@
+{
+  "schemaVersion": 1,
+  "id": "detailed_enchantment_descriptions",
+  "version": "${version}",
+  "name": "Detailed Enchantment Descriptions",
+  "description": "Adds precise, level-scaled enchantment descriptions to item tooltips, computed from the game's own enchantment data.",
+  "authors": [
+    "BrokenJade-Chen"
+  ],
+  "contact": {},
+  "license": "MIT",
+  "icon": "assets/detailed_enchantment_descriptions/icon.png",
+  "environment": "client",
+  "entrypoints": {
+    "client": [
+      "dev.chenjl.detailedench.DetailedEnchantmentDescriptions"
+    ],
+    "modmenu": [
+      "dev.chenjl.detailedench.compat.ModMenuIntegration"
+    ]
+  },
+  "depends": {
+    "fabricloader": ">=0.17.0",
+    "minecraft": "~1.21.8",
+    "java": ">=21",
+    "fabric-api": "*"
+  },
+  "suggests": {
+    "modmenu": "*"
+  }
+}
