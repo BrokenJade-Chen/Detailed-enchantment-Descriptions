@@ -1,2 +1,40 @@
-- name: GH Release
-  uses: softprops/action-gh-release@v3.0.4
+name: Build and Release
+
+# 触发条件：当推送以 v 开头的 tag 时（比如 v1.0.0）
+on:
+  push:
+    tags:
+      - 'v*'
+
+# 权限：允许 Action 修改仓库内容（发 Release 必须有这个）
+permissions:
+  contents: write
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+
+    steps:
+    # 1. 先把你的代码下载到 GitHub 的服务器上
+    - name: Checkout repository
+      uses: actions/checkout@v4
+
+    # 2. 安装 Java 环境（假设你的模组用的是 Java 21）
+    - name: Set up JDK 21
+      uses: actions/setup-java@v4
+      with:
+        java-version: '21'
+        distribution: 'temurin'
+
+    # 3. 编译你的代码，生成 jar 包
+    - name: Build with Gradle
+      run: |
+        chmod +x ./gradlew
+        ./gradlew build
+
+    # 4. 使用图2里的那个“零件”，把你的 jar 包发布出去
+    - name: GH Release
+      uses: softprops/action-gh-release@v3.0.4
+      with:
+        # 注意：这里要写你编译出来的文件路径！通常 Gradle 编译出来的都在 build/libs 下
+        files: build/libs/*.jar
