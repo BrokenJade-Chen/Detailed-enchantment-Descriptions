@@ -1,4 +1,4 @@
-> **AI disclosure**: this mod was written with AI assistance (DeepSeek Harness) on the author's machine. The author reviewed the code and tested every release in-game.
+> **AI disclosure**: this mod was written with AI assistance (DeepSeek Harness) on the author's machine. The author only tested every release in-game.
 
 # Detailed Enchantment Descriptions · 详细附魔描述
 
@@ -115,3 +115,13 @@ This is an independent reimplementation for newer Minecraft versions; no code wa
 ## License
 
 MIT.
+
+---
+
+### ⚠️ Disclaimer & A Note from the Author
+
+Hi everyone! This is my **very first open-source project**, and I am still a beginner. 
+
+I want to be completely upfront: **a vast majority of this project was generated with the help of AI**. Because of this, there might be some flaws, unpolished code, or things that aren't perfectly implemented. 
+
+I'm sharing this to learn and improve. Any feedback, suggestions, or pull requests are highly appreciated. Please bear with me as I continue to learn and fix things. Thanks for visiting!
