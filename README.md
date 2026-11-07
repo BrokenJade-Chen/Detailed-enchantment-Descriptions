@@ -1,3 +1,5 @@
+> **AI disclosure**: this mod was written with AI assistance (DeepSeek Harness) on the author's machine. The author reviewed the code and tested every release in-game.
+
 # Detailed Enchantment Descriptions · 详细附魔描述
 
 Adds a short description under every enchantment in item tooltips, with the numbers computed from
@@ -109,11 +111,6 @@ NeoForge sources use Mojang mappings.
 
 Inspired by [Exact Enchantments](https://modrinth.com/mod/exact-enchantments) by Ronidas (MIT).
 This is an independent reimplementation for newer Minecraft versions; no code was copied.
-
-## AI disclosure
-
-This mod was written with AI assistance (DeepSeek Harness) on the author's machine. The author
-reviewed the code and tested every release in-game.
 
 ## License
 
