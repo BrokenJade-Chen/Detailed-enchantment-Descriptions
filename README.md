@@ -2,6 +2,8 @@
 
 # Detailed Enchantment Descriptions · 详细附魔描述
 
+**English** | [简体中文](README.zh-CN.md)
+
 Adds a short description under every enchantment in item tooltips, with the numbers computed from
 the enchantment's own data — so it always matches what the game actually does at that level.
 
