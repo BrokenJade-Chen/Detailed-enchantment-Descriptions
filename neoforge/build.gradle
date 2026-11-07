@@ -1,0 +1,51 @@
+plugins {
+    id 'java'
+    id 'net.neoforged.moddev' version '2.0.148'
+}
+
+version = '1.0.0+1.21.1'
+group = 'dev.chenjl'
+
+repositories {
+    // 手动用 curl 补齐的构件（代理对个别 URL 不稳定时使用）
+    maven { url = uri('file:///D:/DSH-workspace/MC相关项目/_local-maven') }
+    mavenCentral()
+}
+
+java {
+    toolchain.languageVersion = JavaLanguageVersion.of(21)
+}
+
+neoForge {
+    version = '21.1.265'
+
+    runs {
+        client {
+            client()
+        }
+    }
+
+    mods {
+        detailed_enchantment_descriptions {
+            sourceSet sourceSets.main
+        }
+    }
+}
+
+processResources {
+    inputs.property 'version', project.version
+    filesMatching('META-INF/neoforge.mods.toml') {
+        expand version: inputs.properties.version
+    }
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+
+
+
+
+
+

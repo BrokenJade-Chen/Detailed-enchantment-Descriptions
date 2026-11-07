@@ -36,6 +36,8 @@ public final class ModConfig {
     public boolean includeModded = true;
     /** Describe enchantments on enchanted books. */
     public boolean showEnchantedBook = true;
+    /** When true, descriptions are only shown while the "show descriptions" key is held. */
+    public boolean onlyWhenKeyHeld = false;
     /** 0xRRGGBB colour used for the numbers. */
     public int numberColorRgb = 0x00AA00;
     /** 0xRRGGBB colour used for the description text itself. */

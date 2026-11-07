@@ -1,21 +1,33 @@
 package dev.chenjl.detailedench;
 
+import com.mojang.brigadier.arguments.StringArgumentType;
+import com.mojang.brigadier.context.CommandContext;
 import dev.chenjl.detailedench.config.ConfigScreen;
+import dev.chenjl.detailedench.data.DescriptionFile;
+import dev.chenjl.detailedench.data.DescriptionExporter;
+import dev.chenjl.detailedench.data.DescriptionRepository;
+import dev.chenjl.detailedench.tooltip.EnchantmentDescriber;
+import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import dev.chenjl.detailedench.config.ModConfig;
 import dev.chenjl.detailedench.tooltip.EnchantmentTooltipAppender;
 import net.fabricmc.api.ClientModInitializer;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.fabricmc.fabric.api.client.item.v1.ItemTooltipCallback;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.resource.ResourceManagerHelper;
+import net.fabricmc.fabric.api.resource.SimpleSynchronousResourceReloadListener;
 import net.minecraft.client.MinecraftClient;
 import net.minecraft.client.gui.screen.Screen;
-import net.minecraft.client.option.KeyBinding;
-import net.minecraft.client.util.InputUtil;
-import org.lwjgl.glfw.GLFW;
+import net.minecraft.resource.ResourceManager;
+import net.minecraft.resource.ResourceType;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.registry.RegistryKeys;
+import net.minecraft.util.Identifier;
+import net.minecraft.text.Text;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.argument;
 import static net.fabricmc.fabric.api.client.command.v2.ClientCommandManager.literal;
 
 /**
@@ -26,10 +38,6 @@ public final class DetailedEnchantmentDescriptions implements ClientModInitializ
     public static final String MOD_ID = "detailed_enchantment_descriptions";
     public static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    private static final String KEY_CATEGORY = "key.categories." + MOD_ID;
-    private static final String KEY_OPEN_CONFIG = "key." + MOD_ID + ".open_config";
-
-    private static KeyBinding openConfigKey;
 
     /**
      * Opening a screen straight from a chat command does not stick: the chat screen tears itself down
@@ -44,14 +52,10 @@ public final class DetailedEnchantmentDescriptions implements ClientModInitializ
 
         ItemTooltipCallback.EVENT.register(new EnchantmentTooltipAppender());
 
-        openConfigKey = KeyBindingHelper.registerKeyBinding(new KeyBinding(
-                KEY_OPEN_CONFIG,
-                InputUtil.Type.KEYSYM,
-                GLFW.GLFW_KEY_UNKNOWN, // unbound by default so it cannot clash with other mods
-                KEY_CATEGORY));
+        Keybinds.init();
 
         ClientTickEvents.END_CLIENT_TICK.register(client -> {
-            while (openConfigKey.wasPressed()) {
+            while (Keybinds.OPEN_CONFIG.wasPressed()) {
                 pendingConfigScreen = true;
             }
             if (pendingConfigScreen) {
@@ -60,11 +64,79 @@ public final class DetailedEnchantmentDescriptions implements ClientModInitializ
             }
         });
 
+        ResourceManagerHelper.get(ResourceType.CLIENT_RESOURCES)
+                .registerReloadListener(new SimpleSynchronousResourceReloadListener() {
+                    @Override
+                    public Identifier getFabricId() {
+                        return Identifier.of(MOD_ID, "descriptions");
+                    }
+
+                    @Override
+                    public void reload(ResourceManager manager) {
+                        DescriptionRepository.reload(manager);
+                    }
+                });
+
         LOGGER.info("Registering client commands");
         ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) -> {
             dispatcher.register(literal("dedconfig").executes(context -> openConfigRequest()));
-            dispatcher.register(literal("ded").executes(context -> openConfigRequest()));
+            dispatcher.register(literal("ded")
+                    .executes(context -> openConfigRequest())
+                    .then(literal("reload").executes(context -> {
+                        DescriptionRepository.reload(MinecraftClient.getInstance().getResourceManager());
+                        context.getSource().sendFeedback(
+                                Text.translatable("ded.reload.done", DescriptionRepository.size()));
+                        return 1;
+                    }))
+                    .then(literal("dump").then(argument("id", StringArgumentType.string())
+                            .executes(context -> dump(context, StringArgumentType.getString(context, "id")))))
+                    .then(literal("export").then(argument("id", StringArgumentType.string())
+                            .executes(context -> export(context, StringArgumentType.getString(context, "id"))))));
         });
+    }
+
+    private static int export(CommandContext<FabricClientCommandSource> context, String rawId) {
+        Identifier id = Identifier.tryParse(rawId);
+        if (id == null) {
+            context.getSource().sendError(Text.literal("Invalid enchantment id: " + rawId));
+            return 0;
+        }
+        Enchantment enchantment = findEnchantment(id);
+        if (enchantment == null) {
+            context.getSource().sendError(Text.literal("Unknown enchantment: " + id));
+            return 0;
+        }
+        try {
+            context.getSource().sendFeedback(Text.translatable("ded.export.done",
+                    DescriptionExporter.export(enchantment, id).toString()));
+            return 1;
+        } catch (Exception e) {
+            LOGGER.warn("Could not export {}", id, e);
+            context.getSource().sendError(Text.literal("Export failed: " + e.getMessage()));
+            return 0;
+        }
+    }
+
+    private static Enchantment findEnchantment(Identifier id) {
+        MinecraftClient client = MinecraftClient.getInstance();
+        net.minecraft.registry.DynamicRegistryManager manager = client.world != null
+                ? client.world.getRegistryManager()
+                : client.getNetworkHandler() != null ? client.getNetworkHandler().getRegistryManager() : null;
+        return manager == null ? null
+                : manager.getOptional(RegistryKeys.ENCHANTMENT).map(registry -> registry.get(id)).orElse(null);
+    }
+
+    private static int dump(CommandContext<FabricClientCommandSource> context, String rawId) {
+        Identifier id = Identifier.tryParse(rawId);
+        if (id == null) {
+            context.getSource().sendError(Text.literal("Invalid enchantment id: " + rawId));
+            return 0;
+        }
+        DescriptionFile override = DescriptionRepository.get(id);
+        String mode = override == null ? "none" : (override.disable ? "disabled" : (override.isAppend() ? "append" : "replace"));
+        context.getSource().sendFeedback(Text.literal(
+                id + " | builtin=" + EnchantmentDescriber.hasBuiltin(id) + " | override=" + mode));
+        return 1;
     }
 
     private static int openConfigRequest() {
@@ -82,3 +154,4 @@ public final class DetailedEnchantmentDescriptions implements ClientModInitializ
         return new ConfigScreen(parent);
     }
 }
+

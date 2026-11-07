@@ -1,6 +1,7 @@
 package dev.chenjl.detailedench.tooltip;
 
 import net.minecraft.component.ComponentType;
+import net.minecraft.component.EnchantmentEffectComponentTypes;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.effect.EnchantmentEffectEntry;
 import net.minecraft.enchantment.effect.AllOfEnchantmentEffects;
@@ -73,6 +74,20 @@ public final class EnchantmentValues {
     }
 
     /** Sums the amount of every attribute modifier matching {@code attribute}. */
+    /** Attribute bonus applied by {@code location_changed} effects (soul speed and friends). */
+    public static float locationAttribute(Enchantment enchantment,
+                                          RegistryEntry<EntityAttribute> attribute,
+                                          int level) {
+        for (EnchantmentLocationBasedEffect effect : locationEffects(enchantment,
+                EnchantmentEffectComponentTypes.LOCATION_CHANGED)) {
+            if (effect instanceof AttributeEnchantmentEffect attributeEffect
+                    && attributeEffect.attribute().value() == attribute.value()) {
+                return attributeEffect.amount().getValue(level);
+            }
+        }
+        return 0.0F;
+    }
+
     public static float attribute(Enchantment enchantment,
                                   RegistryEntry<EntityAttribute> attribute,
                                   int level) {

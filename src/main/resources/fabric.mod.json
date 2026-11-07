@@ -7,7 +7,11 @@
   "authors": [
     "BrokenJade-Chen"
   ],
-  "contact": {},
+  "contact": {
+    "homepage": "https://github.com/BrokenJade-Chen/detailed-enchantment-descriptions",
+    "sources": "https://github.com/BrokenJade-Chen/detailed-enchantment-descriptions",
+    "issues": "https://github.com/BrokenJade-Chen/detailed-enchantment-descriptions/issues"
+  },
   "license": "MIT",
   "icon": "assets/detailed_enchantment_descriptions/icon.png",
   "environment": "client",
@@ -20,8 +24,8 @@
     ]
   },
   "depends": {
-    "fabricloader": ">=0.17.0",
-    "minecraft": "~1.21.8",
+    "fabricloader": ">=0.16.0",
+    "minecraft": "~${mcver}",
     "java": ">=21",
     "fabric-api": "*"
   },

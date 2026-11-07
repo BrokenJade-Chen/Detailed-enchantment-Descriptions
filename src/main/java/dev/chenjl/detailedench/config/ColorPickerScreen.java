@@ -1,6 +1,6 @@
 package dev.chenjl.detailedench.config;
 
-import net.minecraft.client.gl.RenderPipelines;
+import dev.chenjl.detailedench.compat.Compat;
 import net.minecraft.client.gui.DrawContext;
 import net.minecraft.client.gui.screen.Screen;
 import net.minecraft.client.gui.widget.ButtonWidget;
@@ -222,8 +222,7 @@ public final class ColorPickerScreen extends Screen {
 
         int left = wheelLeft();
         int top = wheelTop();
-        context.drawTexture(RenderPipelines.GUI_TEXTURED, WHEEL, left, top, 0.0F, 0.0F,
-                WHEEL_SIZE, WHEEL_SIZE, WHEEL_SIZE, WHEEL_SIZE);
+        Compat.drawTexture(context, WHEEL, left, top, WHEEL_SIZE);
 
         double angle = Math.toRadians(this.hue);
         double radius = this.saturation * (WHEEL_SIZE / 2.0F - 1);

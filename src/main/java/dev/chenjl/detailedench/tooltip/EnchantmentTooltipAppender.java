@@ -1,9 +1,10 @@
 package dev.chenjl.detailedench.tooltip;
 
+import dev.chenjl.detailedench.Keybinds;
+import dev.chenjl.detailedench.compat.Compat;
 import dev.chenjl.detailedench.config.ModConfig;
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.component.type.ItemEnchantmentsComponent;
-import net.minecraft.component.type.TooltipDisplayComponent;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.EnchantmentHelper;
 import net.minecraft.item.Item;
@@ -32,6 +33,9 @@ public final class EnchantmentTooltipAppender implements ItemTooltipCallback {
         if (!config.enabled) {
             return;
         }
+        if (config.onlyWhenKeyHeld && !Keybinds.isShowHeld()) {
+            return;
+        }
 
         ItemEnchantmentsComponent enchantments = EnchantmentHelper.getEnchantments(stack);
         if (enchantments.isEmpty()) {
@@ -40,7 +44,7 @@ public final class EnchantmentTooltipAppender implements ItemTooltipCallback {
         if (!config.showEnchantedBook && stack.contains(DataComponentTypes.STORED_ENCHANTMENTS)) {
             return;
         }
-        if (hidesEnchantments(stack)) {
+        if (Compat.hidesEnchantments(stack)) {
             return;
         }
 
@@ -68,16 +72,6 @@ public final class EnchantmentTooltipAppender implements ItemTooltipCallback {
         }
     }
 
-    /** Respects the vanilla "hide enchantments" tooltip flag. */
-    private static boolean hidesEnchantments(ItemStack stack) {
-        TooltipDisplayComponent display = stack.get(DataComponentTypes.TOOLTIP_DISPLAY);
-        if (display == null) {
-            return false;
-        }
-        return display.hiddenComponents().contains(DataComponentTypes.ENCHANTMENTS)
-                || display.hiddenComponents().contains(DataComponentTypes.STORED_ENCHANTMENTS);
-    }
-
     /** @return the index of the tooltip line that shows this enchantment's name, or -1 */
     private static int findNameLine(List<Text> lines, RegistryEntry<Enchantment> entry, int level) {
         String name = Enchantment.getName(entry, level).getString();
@@ -89,3 +83,4 @@ public final class EnchantmentTooltipAppender implements ItemTooltipCallback {
         return -1;
     }
 }
+

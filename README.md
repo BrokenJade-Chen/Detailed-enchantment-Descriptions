@@ -1,35 +1,37 @@
-# Detailed Enchantment Descriptions
+# Detailed Enchantment Descriptions · 详细附魔描述
 
-A client-side Fabric mod for **Minecraft 1.21.8** that adds a precise, level-scaled description line
-under every enchantment in item tooltips, and replaces the need for a separate description mod.
+Adds a short description under every enchantment in item tooltips, with the numbers computed from
+the enchantment's own data — so it always matches what the game actually does at that level.
 
-Unlike the usual approach, the numbers are **not hard-coded**: since 1.21, enchantments are
-data-driven (`data/<namespace>/enchantment/*.json`), so this mod evaluates the same
-`EnchantmentLevelBasedValue` formulas the game itself uses. That means:
+在原版（及部分模组）附魔名字下方加一行描述，数值直接读游戏数据，**当前等级是多少就显示多少**。
 
-* values are always the real in-game values for the current version and pack,
-* datapack and modded enchantments that use standard effect components are supported automatically,
-* a vanilla data change does not require a mod update.
+---
 
-| Enchantment | Tooltip line |
-|---|---|
-| Sharpness V | Increases melee damage by 3. |
-| Smite V | Deals 12.5 extra damage to undead. |
-| Protection IV | Reduces incoming damage by 16%. |
-| Unbreaking III | 75% chance to not consume durability. |
-| Looting III | Increases drops by 0-3, and equipment drop chance by 3%. |
+## Supported versions
+
+| Loader | Minecraft | File |
+|---|---|---|
+| Fabric | 1.21.1 | `detailed_enchantment_descriptions-1.0.0+1.21.1.jar` |
+| Fabric | 1.21.4 | `detailed_enchantment_descriptions-1.0.0+1.21.4.jar` |
+| Fabric | 1.21.8 | `detailed_enchantment_descriptions-1.0.0+1.21.8.jar` |
+| Fabric | 1.21.11 | `detailed_enchantment_descriptions-1.0.0+1.21.11.jar` |
+| NeoForge | 1.21.1 (21.1.265+) | `detailed_enchantment_descriptions-neoforge-1.0.0+1.21.1.jar` |
+
+Client side only. Fabric needs Fabric API; NeoForge needs nothing else. Mod Menu is optional on
+Fabric (settings entry point).
 
 ## Features
 
-* Description + exact value for all 42 vanilla enchantments (6 of them are description-only because
-  the game does not expose a number for them).
-* Level-aware: the value shown is the value for the enchantment's current level.
-* Works on enchanted books.
-* Bilingual: English (`en_us`) and Simplified Chinese (`zh_cn`).
-* Configurable in-game: uses **Cloth Config** when installed (recommended, gives the familiar
-  settings page and is reachable from Mod Menu), otherwise falls back to a small built-in screen.
-  Options: enable/disable, descriptions, numbers, modded enchantments, books and the number colour.
-* Client side only; nothing is required on the server.
+* **42 vanilla enchantments** covered, each with a one-line description of the current level.
+* **Numbers come from the game**: `Enchantment#getEffect` / `LevelBasedValue` on Fabric and
+  `Enchantment#getEffects` / `LevelBasedValue` on NeoForge — no hard-coded tables that go stale.
+* **Config screen** (`/ded`, key bind or Mod Menu): toggle descriptions / numbers / books, colour
+  picker with HSV wheel, presets and `#RRGGBB` input.
+* **Hold-a-key mode**: optionally only show descriptions while a key is held (rebindable).
+* **JSON overrides** for any enchantment (including other mods'): drop a file into a resource pack or
+  the config folder, pick `replace` / `append` / `hide`. See [docs/EXTENDING.md](docs/EXTENDING.md).
+* **Commands**: `/ded reload`, `/ded dump <id>`, `/ded export <id>`.
+* Chinese and English translations, numbers formatted without trailing `.0`.
 * Respects the vanilla "hide enchantments" flag.
 
 ## Screenshots
@@ -40,54 +42,79 @@ data-driven (`data/<namespace>/enchantment/*.json`), so this mod evaluates the s
 | **Enchanted book** | **Colour picker** |
 | ![Enchanted book tooltip](docs/screenshots/tooltip-enchanted-book.png) | ![Colour picker](docs/screenshots/color-picker.png) |
 
-> The rounded tooltip frame and the smoother text rendering in these screenshots come from other
-> client-side mods (tooltip styling / font rendering). This mod only adds the description lines and
-> provides the colour picker.
-
-## Requirements
-
-* Minecraft **1.21.8**
-* Fabric Loader **0.17.0+**
-* Fabric API (client)
-* Optional: Mod Menu (settings entry point)
+> The rounded tooltip frame and smoother text rendering in these screenshots come from other
+> client mods (tooltip styling / font rendering), not from this one.
 
 ## Installation
 
-1. Install Fabric Loader for 1.21.8.
-2. Drop `detailed_enchantment_descriptions-<version>.jar` and Fabric API into `mods/`.
+1. Install Fabric Loader or NeoForge for your Minecraft version.
+2. Put the matching jar (and Fabric API on Fabric) into `mods/`.
 3. Remove other enchantment description mods to avoid duplicated lines.
 
-## Settings
+## Configuration
 
-Open the settings from **Mod Menu → Detailed Enchantment Descriptions**, with `/dedconfig`
-(or `/ded`), or by binding a key in *Options → Controls → Key Binds* (unbound by default).
+Open with `/ded`, `/dedconfig`, the rebindable "Open settings" key, or Mod Menu on Fabric.
 Settings are stored in `config/detailed_enchantment_descriptions.json`.
+
+## Extending
+
+Any enchantment can be described without code. Put a JSON file in
+
+* a resource pack: `assets/<any namespace>/enchantment_descriptions/<name>.json`, or
+* the config folder: `config/detailed_enchantment_descriptions/enchantments/<name>.json`
+
+The config folder wins over resource packs. Run `/ded reload` after editing the config folder
+(`F3+T` for resource packs). Full schema: [docs/EXTENDING.md](docs/EXTENDING.md).
+
+```json
+{
+  "schema": 1,
+  "enchantment": "minecraft:sharpness",
+  "mode": "append",
+  "lines": [
+    { "type": "text", "text": "锋利：这把武器更锋利了。" }
+  ]
+}
+```
 
 ## Building
 
+Fabric (one jar per version; writes into `../dist/`):
+
 ```bash
-./gradlew build
-# jar: build/libs/detailed_enchantment_descriptions-<version>.jar
+node tools/build-version.mjs 1.21.1 1.21.4 1.21.8 1.21.11
 ```
 
-Requires JDK 21.
+NeoForge 1.21.1 (writes `build/libs/`):
+
+```bash
+cd neoforge
+gradle build --offline
+```
+
+Requires JDK 21. Version specific Fabric code lives in `src/versions/<version>/` and `overlays/`;
+NeoForge sources use Mojang mappings.
 
 ## How the values are read
 
-* Value effects (`damage`, `damage_protection`, `knockback`, ...): `Enchantment#getEffect` +
-  `EnchantmentLevelBasedValue#getValue(level)`.
-* Attribute effects (`efficiency`, `depth_strider`, `sweeping_edge`, ...):
-  `EnchantmentEffectComponentTypes.ATTRIBUTES` + the same level based value.
-* Damage reduction: every point of `damage_protection` is 4% (`DamageUtil#getInflictedDamage`,
-  capped at 20 points = 80%).
-* A few values live in code rather than in the enchantment data and are documented in
-  `EnchantmentDescriber` (for example the 5 second fire duration of Flame).
+* Value effects (`damage`, `damage_protection`, `knockback`, …): the enchantment's effect list is
+  evaluated at the current level.
+* Attribute effects (`efficiency`, `depth_strider`, `sweeping_edge`, …): the attribute bonus is read
+  from `attributes`, or from `location_changed` for enchantments like Soul Speed.
+* Damage reduction: every point of `damage_protection` is 4% (capped at 20 points = 80%).
+* A few values live in vanilla code rather than in enchantment data (for example Flame's 5 seconds);
+  those are documented where they are used.
 
 ## Credits
 
 Inspired by [Exact Enchantments](https://modrinth.com/mod/exact-enchantments) by Ronidas (MIT).
-This is an independent reimplementation for Fabric 1.21.8; no code was copied from it.
+This is an independent reimplementation for newer Minecraft versions; no code was copied.
+
+## AI disclosure
+
+This mod was written with AI assistance (DeepSeek Harness) on the author's machine. The author
+reviewed the code and tested every release in-game.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT.

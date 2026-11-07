@@ -1,9 +1,19 @@
 plugins {
-    id 'fabric-loom' version "${loom_version}"
+    id 'fabric-loom' version '1.14.8'
     id 'maven-publish'
 }
 
-version = project.mod_version
+// 目标版本：-Pmcver=1.21.11；每个版本的依赖放在 versions/<mcver>/gradle.properties
+def mcver = project.findProperty('mcver') ?: '1.21.8'
+def versionProps = new Properties()
+def versionFile = file("versions/${mcver}/gradle.properties")
+if (versionFile.exists()) {
+    versionFile.withInputStream { versionProps.load(it) }
+} else {
+    throw new GradleException("Unknown mcver '${mcver}': ${versionFile} not found")
+}
+
+version = "${project.mod_version}+${mcver}"
 group = project.maven_group
 
 base {
@@ -16,20 +26,21 @@ repositories {
 }
 
 dependencies {
-    minecraft "com.mojang:minecraft:${project.minecraft_version}"
-    mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+    minecraft "com.mojang:minecraft:${mcver}"
+    mappings "net.fabricmc:yarn:${versionProps['deps.yarn']}:v2"
 
     modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
-    modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
+    modImplementation "net.fabricmc.fabric-api:fabric-api:${versionProps['deps.fabric-api']}"
 
-    modCompileOnly "com.terraformersmc:modmenu:${project.modmenu_version}"
+    modCompileOnly "com.terraformersmc:modmenu:${versionProps['deps.modmenu']}"
 }
 
 processResources {
     inputs.property "version", project.version
+    inputs.property "mcver", mcver
 
     filesMatching("fabric.mod.json") {
-        expand "version": inputs.properties.version
+        expand "version": inputs.properties.version, "mcver": inputs.properties.mcver
     }
 }
 

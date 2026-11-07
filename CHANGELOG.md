@@ -1,5 +1,101 @@
 # Changelog
 
+## 1.0.0
+
+* First release: Fabric 1.21.1 / 1.21.4 / 1.21.8 / 1.21.11 and NeoForge 1.21.1.
+* 42 vanilla enchantments, level-accurate values read from the game's own data.
+* Settings screen with HSV colour picker, hold-a-key mode, JSON overrides and `/ded` commands.
+* Respects the vanilla "hide enchantments" flag.
+
+
+## 0.2.10
+
+* Removed the in-game description editor (screens and its config entry): numbers that live outside
+  plain components made the editing experience unreliable. Player overrides stay available as JSON
+  files (config folder or resource pack) plus `/ded export`, `/ded reload` and `/ded dump`.
+
+
+## 0.2.9
+
+* New `source` line type for numbers that are not plain components/attributes, and the editor now
+  offers them: Unbreaking (chance), Thorns, Fire Aspect, Flame, Frost Walker, Wind Burst
+  (knockback), Respiration (seconds), Swift Sneak, Soul Speed (durability chance).
+
+
+## 0.2.8
+
+* JSON `attribute` lines now fall back to `location_changed` attributes, so Soul Speed shows a value
+  instead of 0.
+* The editor/export pick sensible units per attribute (movement speed x1000, ratios x100, oxygen x15),
+  matching the built-in text.
+* Fixed the Chinese "too many placeholders" warning printing raw `%s`.
+
+
+## 0.2.7
+
+* The enchantment browser now uses paged buttons instead of a list widget (the list widget's entry
+  renderer differs on 1.21.11 and left the page almost empty).
+* The editor detects numbers from `location_changed` attributes too (Soul Speed's movement speed was
+  missed), and shows a warning when the template has more `%s` than detected numbers.
+
+
+## 0.2.6
+
+* Fixed `/ded export` and JSON `value` lines: they looked components up in the wrong registry
+  (`DATA_COMPONENT_TYPE` instead of `ENCHANTMENT_EFFECT_COMPONENT_TYPE`), which made the export fail
+  and value lines silently resolve to nothing.
+* New in-game editor: Settings -> **Enchantment descriptions (overrides)** lists every enchantment,
+  opens an editor where `%s` placeholders are filled with the detected numbers, supports
+  replace/append/hide, and saves straight to the config folder.
+
+
+## 0.2.5
+
+* `/ded export <id>` writes a starter JSON file for any enchantment.
+* New `template` line type: multiple `%s` values in one line (see docs/EXTENDING.md).
+
+
+## 0.2.4
+
+* Soul Speed: the speed bonus is now **actually** relative to the 0.1 base speed
+  (40.5% / 51% / 61.5%). 0.2.3 shipped without this change because an automated text replacement
+  did not match; the built class is now verified with `javap` to contain the x10 factor.
+
+
+## 0.2.3
+
+* Soul Speed: the speed bonus is now shown relative to the 0.1 base movement speed
+  (40.5% / 51% / 61.5% instead of 4.1% / 5.1% / 6.1%); durability cost is 4% per level.
+* Sweeping Edge: wording now says the ratio is *extra* weapon damage (50% / 67% / 75%),
+  not total attack damage.
+* Fixed build script writing jars to the wrong dist directory.
+
+
+## 0.2.2
+
+* Fixed the "only while holding key" option: the tooltip now checks the physical key state instead
+  of `KeyBinding#isPressed()`, which vanilla resets while a screen is handling input.
+* Added the missing translation for the "show descriptions" key binding.
+* Added `tools/check-jar.mjs`, a build-artifact sanity check (classes, version, lang keys, texture).
+* **Multi-version build**: the same source now compiles for 1.21.1, 1.21.4, 1.21.8 and 1.21.11.
+  Version specific code lives in `overlays/<version>/` and is selected by `tools/build-version.mjs`.
+
+## 0.2.1
+
+* New option **"Only while holding key"**: when enabled, descriptions are only added to the tooltip
+  while the new (rebindable, default Left Alt) "Show descriptions" key is held.
+
+## 0.2.0
+
+* **JSON descriptions for any enchantment** (modded included): drop a file into a resource pack
+  (`assets/<ns>/enchantment_descriptions/*.json`) or `config/detailed_enchantment_descriptions/enchantments/`.
+  Config folder wins over resource packs; `mode: replace|append` and `disable` are supported.
+  See [docs/EXTENDING.md](docs/EXTENDING.md).
+* **Generic fallback**: enchantments without a hand written rule now get a value line derived from
+  the standard effect components (`damage`, `damage_protection`, `knockback`, ...).
+* New commands: `/ded reload`, `/ded dump <id>`.
+* Builds for 1.21.8 (`-Pmcver=1.21.8`); other targets still need per-version adaptations.
+
 ## 0.1.9
 
 * The colour picker preview now matches the tooltip: when editing the number colour only the number

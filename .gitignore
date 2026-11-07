@@ -4,3 +4,7 @@ run/
 *.iml
 .idea/
 .vscode/
+build-work/
+*.log
+neoforge/run/
+neoforge/build/

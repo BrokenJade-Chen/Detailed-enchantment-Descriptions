@@ -1,6 +1,9 @@
 package dev.chenjl.detailedench.tooltip;
 
 import dev.chenjl.detailedench.config.ModConfig;
+import dev.chenjl.detailedench.data.DescriptionFile;
+import dev.chenjl.detailedench.data.DescriptionRepository;
+import dev.chenjl.detailedench.data.LineRenderer;
 import net.minecraft.component.ComponentType;
 import net.minecraft.enchantment.Enchantment;
 import net.minecraft.enchantment.effect.EnchantmentEffectEntry;
@@ -12,8 +15,7 @@ import net.minecraft.enchantment.effect.entity.ExplodeEnchantmentEffect;
 import net.minecraft.enchantment.effect.entity.IgniteEnchantmentEffect;
 import net.minecraft.enchantment.effect.entity.ReplaceDiskEnchantmentEffect;
 import net.minecraft.enchantment.effect.value.RemoveBinomialEnchantmentEffect;
-import net.minecraft.component.DataComponentTypes;
-import net.minecraft.component.type.EquippableComponent;
+import dev.chenjl.detailedench.compat.Compat;
 import net.minecraft.entity.attribute.EntityAttribute;
 import net.minecraft.registry.entry.RegistryEntry;
 import net.minecraft.item.ItemStack;
@@ -25,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 import static net.minecraft.component.EnchantmentEffectComponentTypes.*;
-import static net.minecraft.entity.attribute.EntityAttributes.*;
+import static dev.chenjl.detailedench.compat.Attrs.*;
 
 /**
  * Turns an enchantment + level into the tooltip lines shown under its name.
@@ -35,12 +37,7 @@ import static net.minecraft.entity.attribute.EntityAttributes.*;
  * projectile fire duration); those are called out where they are used.</p>
  */
 public final class EnchantmentDescriber {
-    private static final Map<Identifier, Rule> RULES = new HashMap<>();
-
-    @FunctionalInterface
-    public interface Rule {
-        List<Text> describe(Enchantment enchantment, int level, ItemStack stack);
-    }
+    private static final Map<Identifier, LineProvider> RULES = new HashMap<>();
 
     static {
         registerDefaults();
@@ -49,13 +46,40 @@ public final class EnchantmentDescriber {
     private EnchantmentDescriber() {
     }
 
-    /** @return the description lines for this enchantment, empty when nothing is known about it */
+    /**
+     * @return the description lines for this enchantment: a JSON override when one exists, otherwise
+     *         the built-in rule, otherwise the generic fallback for modded enchantments
+     */
     public static List<Text> describe(Enchantment enchantment, Identifier id, int level, ItemStack stack) {
-        Rule rule = RULES.get(id);
-        if (rule == null) {
+        DescriptionFile override = DescriptionRepository.get(id);
+        if (override != null && override.disable) {
             return List.of();
         }
-        return rule.describe(enchantment, level, stack);
+
+        List<Text> base = builtin(enchantment, id, level, stack);
+        if (override == null) {
+            return base;
+        }
+        List<Text> custom = LineRenderer.render(override, enchantment, level);
+        if (!override.isAppend()) {
+            return custom;
+        }
+        List<Text> merged = new java.util.ArrayList<>(base);
+        merged.addAll(custom);
+        return merged;
+    }
+
+    /** @return true when a hand written rule exists (used by {@code /ded dump}) */
+    public static boolean hasBuiltin(Identifier id) {
+        return RULES.containsKey(id);
+    }
+
+    private static List<Text> builtin(Enchantment enchantment, Identifier id, int level, ItemStack stack) {
+        LineProvider rule = RULES.get(id);
+        if (rule != null) {
+            return rule.lines(enchantment, level, stack);
+        }
+        return GenericDescriber.lines(enchantment, level);
     }
 
     private static void registerDefaults() {
@@ -92,7 +116,9 @@ public final class EnchantmentDescriber {
         register("swift_sneak", (ench, lv, stack) -> line("swift_sneak", percentOf(0.3F + EnchantmentValues.attribute(ench, SNEAKING_SPEED, lv))));
         register("sweeping_edge", (ench, lv, stack) -> line("sweeping_edge", percentOf(EnchantmentValues.attribute(ench, SWEEPING_DAMAGE_RATIO, lv))));
         register("soul_speed", (ench, lv, stack) -> line("soul_speed",
-                percentOf(locationAttribute(ench, MOVEMENT_SPEED, lv)),
+                // The attribute adds 0.0405 + 0.0105*(level-1) to the 0.1 base speed, so multiply by
+                // 10 to express it as the percentage shown on the wiki (40.5% / 51% / 61.5%).
+                percentOf(EnchantmentValues.locationAttribute(ench, MOVEMENT_SPEED, lv) * 10.0F),
                 percentOf(0.04F * lv))); // durability cost chance is part of the random_chance condition
 
         // ---- probability / triggers ----
@@ -123,11 +149,14 @@ public final class EnchantmentDescriber {
         register("silk_touch", (ench, lv, stack) -> staticLine("silk_touch"));
     }
 
-    private static void register(String path, Rule rule) {
+    private static void register(String path, LineProvider rule) {
         RULES.put(Identifier.of("minecraft", path), rule);
     }
 
     private static List<Text> line(String id, Object... arguments) {
+        if (!ModConfig.get().showDescriptions) {
+            return List.of();
+        }
         if (ModConfig.get().showNumbers) {
             return List.of(Text.translatable("ded.desc." + id, arguments).styled(style -> style.withColor(ModConfig.get().descriptionColorRgb)));
         }
@@ -135,6 +164,9 @@ public final class EnchantmentDescriber {
     }
 
     private static List<Text> staticLine(String id) {
+        if (!ModConfig.get().showDescriptions) {
+            return List.of();
+        }
         return List.of(Text.translatable("ded.desc." + id).styled(style -> style.withColor(ModConfig.get().descriptionColorRgb)));
     }
 
@@ -149,26 +181,13 @@ public final class EnchantmentDescriber {
     }
 
     /** Reads an attribute amount from {@code location_changed} effects (used by Soul Speed). */
-    private static float locationAttribute(Enchantment enchantment,
-                                           RegistryEntry<EntityAttribute> attribute,
-                                           int level) {
-        for (EnchantmentLocationBasedEffect effect : EnchantmentValues.locationEffects(enchantment, LOCATION_CHANGED)) {
-            if (effect instanceof AttributeEnchantmentEffect attributeEffect
-                    && attributeEffect.attribute().value() == attribute.value()) {
-                return attributeEffect.amount().getValue(level);
-            }
-        }
-        return 0.0F;
-    }
-
-    private static float unbreakingChance(Enchantment enchantment, int level, ItemStack stack) {
+    public static float unbreakingChance(Enchantment enchantment, int level, ItemStack stack) {
         List<EnchantmentEffectEntry<EnchantmentValueEffect>> entries = enchantment.getEffect(ITEM_DAMAGE);
         if (entries.isEmpty()) {
             return 0.0F;
         }
         // vanilla holds two entries: armour first, everything else second
-        EquippableComponent equippable = stack.get(DataComponentTypes.EQUIPPABLE);
-        boolean armor = equippable != null && equippable.slot().isArmorSlot();
+        boolean armor = Compat.isArmor(stack);
         int index = Math.min(armor ? 0 : 1, entries.size() - 1);
         EnchantmentValueEffect effect = entries.get(index).effect();
         if (effect instanceof RemoveBinomialEnchantmentEffect removeBinomial) {
@@ -177,7 +196,7 @@ public final class EnchantmentDescriber {
         return 0.0F;
     }
 
-    private static float igniteSeconds(Enchantment enchantment, int level) {
+    public static float igniteSeconds(Enchantment enchantment, int level) {
         for (EnchantmentEntityEffect effect : EnchantmentValues.targetedEntityEffects(enchantment, POST_ATTACK)) {
             if (effect instanceof IgniteEnchantmentEffect ignite) {
                 return ignite.duration().getValue(level);
@@ -186,7 +205,7 @@ public final class EnchantmentDescriber {
         return 0.0F;
     }
 
-    private static float frostRadius(Enchantment enchantment, int level) {
+    public static float frostRadius(Enchantment enchantment, int level) {
         for (EnchantmentLocationBasedEffect effect : EnchantmentValues.locationEffects(enchantment, LOCATION_CHANGED)) {
             if (effect instanceof ReplaceDiskEnchantmentEffect replaceDisk) {
                 return replaceDisk.radius().getValue(level);
@@ -195,7 +214,7 @@ public final class EnchantmentDescriber {
         return 0.0F;
     }
 
-    private static float windBurstKnockback(Enchantment enchantment, int level) {
+    public static float windBurstKnockback(Enchantment enchantment, int level) {
         for (EnchantmentEntityEffect effect : EnchantmentValues.targetedEntityEffects(enchantment, POST_ATTACK)) {
             if (effect instanceof ExplodeEnchantmentEffect explode) {
                 return explode.knockbackMultiplier().map(value -> value.getValue(level)).orElse(0.0F);
@@ -204,3 +223,4 @@ public final class EnchantmentDescriber {
         return 0.0F;
     }
 }
+

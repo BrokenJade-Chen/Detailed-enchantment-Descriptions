@@ -45,6 +45,10 @@ public final class ConfigScreen extends Screen {
                 () -> config.showEnchantedBook, value -> config.showEnchantedBook = value));
         y += ROW_HEIGHT;
 
+        this.addDrawableChild(toggle(x, y, "ded.config.hold_key",
+                () -> config.onlyWhenKeyHeld, value -> config.onlyWhenKeyHeld = value));
+        y += ROW_HEIGHT;
+
         this.addDrawableChild(ButtonWidget.builder(descriptionColorLabel(config), button ->
                 this.openPicker(Text.translatable("ded.config.description_color"),
                         config.descriptionColorRgb, false, value -> config.descriptionColorRgb = value))
