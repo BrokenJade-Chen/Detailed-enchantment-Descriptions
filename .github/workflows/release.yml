@@ -24,6 +24,8 @@ jobs:
           gradle-version: '9.2.0'
 
       - name: Build Fabric (all versions)
+        env:
+          DIST_DIR: dist
         run: node tools/build-version.mjs 1.21.1 1.21.4 1.21.8 1.21.11
 
       - name: Build NeoForge
@@ -33,7 +35,7 @@ jobs:
       - name: Collect jars
         run: |
           mkdir -p out
-          cp ../dist/*.jar out/ 2>/dev/null || true
+          cp dist/*.jar out/ 2>/dev/null || true
           cp neoforge/build/libs/*.jar out/
           ls -la out
 

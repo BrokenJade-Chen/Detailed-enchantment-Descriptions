@@ -49,7 +49,8 @@ for (const v of versions) {
   const jar = path.join(libs, jars[0]);
   execFileSync(process.execPath, [path.join(root, 'tools', 'check-jar.mjs'), jar], { stdio: 'inherit' });
 
-  const outDir = path.join(root, '..', 'dist');
+  // CI 里输出到仓库内的 dist/，本地默认输出到项目根的 dist/
+  const outDir = process.env.DIST_DIR ? path.resolve(process.env.DIST_DIR) : path.join(root, '..', 'dist');
   fs.mkdirSync(outDir, { recursive: true });
   fs.copyFileSync(jar, path.join(outDir, jars[0]));
   const sources = fs.readdirSync(libs).find(f => f.endsWith('-sources.jar'));

@@ -24,13 +24,16 @@ jobs:
         with:
           node-version: '20'
       - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '9.2.0'
       - name: Build
+        env:
+          DIST_DIR: dist
         run: node tools/build-version.mjs ${{ matrix.mc }}
       - uses: actions/upload-artifact@v4
         with:
           name: fabric-${{ matrix.mc }}
-          path: |
-            ../dist/*.jar
+          path: dist/*.jar
           if-no-files-found: error
 
   neoforge:
