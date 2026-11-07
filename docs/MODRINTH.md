@@ -20,6 +20,11 @@
 
 ---
 
+## 中文描述
+
+中文版整篇粘贴用 [MODRINTH-PASTE.zh-CN.md](MODRINTH-PASTE.zh-CN.md)；英文版用
+[MODRINTH-PASTE.md](MODRINTH-PASTE.md)。
+
 ## Short description (≤ 350 chars)
 
 Adds precise, level-scaled description lines to enchantment tooltips. Values are read from the
